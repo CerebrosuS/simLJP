@@ -38,10 +38,10 @@
 #define MASS 1
 
 // Total number of particles to simulate.
-#define TOTAL_PARTICLE 64
+#define TOTAL_PARTICLE 1000
 
 // Total number of simulation loops.
-#define TOTAL_TIMESTEPS 100
+#define TOTAL_TIMESTEPS 1000
 
 // Single timestep for integration. /s
 #define TIMESTEP 1e-7
@@ -191,17 +191,15 @@ void calc_lenjon_force(const VectorXd &vp, const MatrixXd &mp, MatrixXd &mpo) {
  * \param[in] mp Matrix object for the positions with 3 rows and n columns.
  * \param[out] ma Matrix object for accelerations with 3 rows and n columns. */
 void calc_accel(const MatrixXd &mp, MatrixXd &ma) {
-  // Number of columns (particles).
-  int co = mp.cols();
-
   // Temporary vector/matrix objectes for calculation.
-  VectorXd vf(3, 1);
-  MatrixXd mpo(3, co);
+  MatrixXd mpo(3, TOTAL_PARTICLE);
 
-  for (int pi = 0; pi < co; pi++) {
-    VectorXd vp = mp.col(pi);
-    calc_lenjon_force(vp, mp.block(0, pi+1, 3, co-pi-1), mpo);
-    ma.col(pi) = mpo.rowwise().sum();
+  for (int pi = 0; pi < TOTAL_PARTICLE; pi++) {
+    calc_lenjon_force(mp.col(pi), mp.block(0, pi+1, 3, TOTAL_PARTICLE-(pi+1)),
+		      mpo);
+    ma.col(pi) = mpo.block(0, 0, 3, TOTAL_PARTICLE-(pi+1)).rowwise().sum()/MASS;
+    ma.block(0, pi+1, 3, TOTAL_PARTICLE-(pi+1)) -=
+      mpo.block(0, 0, 3, TOTAL_PARTICLE-(pi+1));
   }
 }
 
