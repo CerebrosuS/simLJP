@@ -48,6 +48,9 @@
 
 using namespace Eigen;
 
+// Typedefs for special Matrix constructions.
+typedef Matrix<double, 3, TOTAL_PARTICLE> Matrix3Td;
+
 // Define csv format for eigen
 const static IOFormat CSVFormat(StreamPrecision, DontAlignCols, ", ", "\n");
 
@@ -70,7 +73,7 @@ const char * const __email__ = "Coding@Christian-Krippendorf.de";
  * \param[in] bottom Bottom border of the box /m.
  * \param[in] front Front border of the box /m.
  * \param[in] back Back border of the box /m. */
-void border_handling(MatrixXd &mp, MatrixXd &mv, bool closed, double left,
+void border_handling(Matrix3Td &mp, Matrix3Td &mv, bool closed, double left,
   double right, double top, double bottom, double front, double back) {
   if (closed) {
     // If one of the particles reaches the end of the box, the velocity has to
@@ -100,7 +103,7 @@ void border_handling(MatrixXd &mp, MatrixXd &mv, bool closed, double left,
  * will be implemented here.
  *
  * \param[out] mv Reference to the velocity matrix of all particles. */
-void init_velocities(MatrixXd &mv) {
+void init_velocities(Matrix3Td &mv) {
   // Total number of columns (particles).
   int co = mv.cols();
 
@@ -125,7 +128,7 @@ void init_velocities(MatrixXd &mv) {
  * any natural number.
  *
  * \param[out] mp Reference to the position matrix of all particles. */
-void init_grid(MatrixXd &mp) {
+void init_grid(Matrix3Td &mp) {
   // Position variables for counting over the loops.
   int px = 0, py = 0, pz = 0;
 
@@ -169,7 +172,7 @@ void init_grid(MatrixXd &mp) {
  * \param[in] mp Reference to the matrix object of all surrounding particles.
  * \param[out] mpo Reference to the matrix object where the final force will be
  *                 stored. */
-void calc_lenjon_force(const VectorXd &vp, const MatrixXd &mp, MatrixXd &mpo) {
+void calc_lenjon_force(const VectorXd &vp, const MatrixXd &mp, Matrix3Td &mpo) {
   // Get distance between the main particle and all surrounding particles.
   MatrixXd rp = mp-vp.replicate(1, mp.cols());
 
@@ -181,7 +184,7 @@ void calc_lenjon_force(const VectorXd &vp, const MatrixXd &mp, MatrixXd &mpo) {
   rpn1 = 24*EPSILON*(2*rpn1.array().pow(7.0)-rpn1.array().pow(13.0));
 
   // Go back to the component wise view.
-  mpo = rp.array().rowwise()*rpn1.cwiseProduct(rpn0).transpose().array();
+  mpo.block(0, 0, 3, mp.cols()) = rp.array().rowwise()*rpn1.cwiseProduct(rpn0).transpose().array();
 }
 
 /** 
@@ -190,9 +193,9 @@ void calc_lenjon_force(const VectorXd &vp, const MatrixXd &mp, MatrixXd &mpo) {
  *
  * \param[in] mp Matrix object for the positions with 3 rows and n columns.
  * \param[out] ma Matrix object for accelerations with 3 rows and n columns. */
-void calc_accel(const MatrixXd &mp, MatrixXd &ma) {
+void calc_accel(const Matrix3Td &mp, Matrix3Td &ma) {
   // Temporary vector/matrix objectes for calculation.
-  MatrixXd mpo(3, TOTAL_PARTICLE);
+  Matrix3Td mpo;
 
   for (int pi = 0; pi < TOTAL_PARTICLE; pi++) {
     calc_lenjon_force(mp.col(pi), mp.block(0, pi+1, 3, TOTAL_PARTICLE-(pi+1)),
@@ -253,7 +256,7 @@ std::string init_serialize() {
  * \param[in] mv Matrix object for velocties with 3 rows and n columns.
  * \param[in] count Number of loop; This gives information about the number of 
  *                  file to write in. */
-void write(const MatrixXd &mp, const MatrixXd &mv, const MatrixXd &ma,
+void write(const Matrix3Td &mp, const Matrix3Td &mv, const Matrix3Td &ma,
 	   const std::string &path, const int &count) {
   // Open the output stream.
   std::ofstream out((path + std::string("/mds-") + std::to_string(count) +
@@ -273,7 +276,7 @@ void write(const MatrixXd &mp, const MatrixXd &mv, const MatrixXd &ma,
  * \param[in] mv Reference to the velocity matrix of all particles.
  * \param[in] ma Reference to the acceleration matrix of all particles. 
  * \param[in] serialize True if serialization wanted, else false. */
-void simulate(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, bool serialize) {
+void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
   std::cout << "\nStart simulatin process..." << std::flush;
 
   // If serialization is wanted. Initialize the system to do so.
@@ -327,8 +330,7 @@ int main(int argc, char **argv) {
     info();
 
     // Define matrices of position, velocity and acceleration.
-    MatrixXd mp(3, TOTAL_PARTICLE), mv(3, TOTAL_PARTICLE),
-      ma(3, TOTAL_PARTICLE);
+    Matrix3Td mp, mv, ma;
 
     // Initialize the position and velocity matrices to solve initial condition
     // problem. 
