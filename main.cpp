@@ -38,16 +38,15 @@
 #define MASS 1
 
 // Total number of particles to simulate.
-#define TOTAL_PARTICLE 1000
+#define TOTAL_PARTICLE 64
 
 // Total number of simulation loops.
-#define TOTAL_TIMESTEPS 1e3
+#define TOTAL_TIMESTEPS 100
 
 // Single timestep for integration. /s
 #define TIMESTEP 1e-7
 
 using namespace Eigen;
-using namespace std;
 
 // Define csv format for eigen
 const static IOFormat CSVFormat(StreamPrecision, DontAlignCols, ", ", "\n");
@@ -107,8 +106,8 @@ void init_velocities(MatrixXd &mv) {
 
   // Create the normal distribution object for generating random velocity
   // numbers.
-  default_random_engine generator;
-  normal_distribution<double> dist(0.0, 2.0);
+  std::default_random_engine generator;
+  std::normal_distribution<double> dist(0.0, 2.0);
 
   // Calculate velocity components for every particle.
   for (int pi = 0; pi < co; pi++) {
@@ -139,7 +138,7 @@ void init_grid(MatrixXd &mp) {
   // of particles is wrong.
   double po = cbrt(co);
   if (fmod(po, 1) != 0)
-    cout << "Error: Wrong size of particles." << endl;
+    std::cout << "Error: Wrong size of particles." << std::endl;
 
   // Got through all particle postitions and give them a position number.
   for (int pi = 0; pi < co; pi++) {
@@ -222,7 +221,7 @@ bool path_exist(const char* path) {
  * optimized throught a configuration file.
  *
  * \return Name of the output path. */
-string init_serialize() {
+std::string init_serialize() {
   // Time data object for getting the raw data.
   time_t rawtime;
   struct tm *timeinfo;
@@ -238,7 +237,7 @@ string init_serialize() {
   strftime(tbuf, sizeof(tbuf), "%d-%m-%Y_%I-%M-%S", timeinfo);
 
   // Create final path as string with prefix.
-  string path = string("mds-") + string(tbuf) + string("/");
+  std::string path = std::string("mds-") + std::string(tbuf) + std::string("/");
   mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP |
     S_IXGRP);
 
@@ -256,10 +255,11 @@ string init_serialize() {
  * \param[in] mv Matrix object for velocties with 3 rows and n columns.
  * \param[in] count Number of loop; This gives information about the number of 
  *                  file to write in. */
-void write(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, string path, int count) {
+void write(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, std::string path,
+	   int count) {
   // Open the output stream.
-  ofstream out((path + string("/mds-") + to_string(count) +
-    string(".csv")).c_str());
+  std::ofstream out((path + std::string("/mds-") + std::to_string(count) +
+		     std::string(".csv")).c_str());
 
   // Write data into the stream in an appropriate data format.
   out << mp.transpose().format(CSVFormat);
@@ -276,28 +276,32 @@ void write(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, string path, int count) {
  * \param[in] ma Reference to the acceleration matrix of all particles. 
  * \param[in] serialize True if serialization wanted, else false. */
 void simulate(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, bool serialize) {
+  std::cout << "\nStart simulatin process..." << std::flush;
 
   // If serialization is wanted. Initialize the system to do so.
-  string path;
+  std::string path;
   if (serialize)
     path = init_serialize();
 
   // Calculate box borders from number of particles.
   double po = cbrt(mp.cols());
   if (fmod(po, 1) != 0)
-    cout << "Error: Wrong size of particles." << endl;
+    std::cout << "Error: Wrong size of particles." << std::endl;
 
   // Calculate accelerations
   calc_accel(mp, ma);
 
+  // Temporary calculations that will be done here once instead of multiple
+  // times inside the loop.
+  double td205 = 0.5 * std::pow(TIMESTEP, 2);
+  double td05 = 0.5 * TIMESTEP;
+
   // Main timestep loop
   for (int ts = 0; ts < TOTAL_TIMESTEPS; ts++) {
     // Implementation of the Störmer-Velocity-Verlet algorithm.
-    mp = mp + mv*TIMESTEP + 0.5*ma*pow(TIMESTEP, 2);
-    MatrixXd mal = ma;
+    mp = mp + mv*TIMESTEP + ma*td205;
     calc_accel(mp, ma);
-    ma += mal;
-    mv += 0.5*ma*TIMESTEP;
+    mv += ma*td05;
 
     // Correct the velocities and/or positions related to the way of handling
     // border conditions.
@@ -307,13 +311,15 @@ void simulate(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, bool serialize) {
     if (serialize)
       write(mp, mv, ma, path, ts);
   }
+
+  std::cout << "finish!" << std::endl << std::flush;
 }
 
 /** 
  * \brief Write short information about hte application. */
 void info() {
-  cout << "Molecular Dynamic Simulation (Ver. " << __version__ << ")" << endl
-    << "by " << __author__ << " <" << __email__ << ">" << endl;
+  std::cout << "Molecular Dynamic Simulation (Ver. " << __version__ << ")" <<
+    std::endl << "by " << __author__ << " <" << __email__ << ">" << std::endl;
 }
 
 /** 
@@ -339,9 +345,9 @@ int main(int argc, char **argv) {
     // Start the main simulation process.
     simulate(mp, mv, ma, true);
 
-    // End timer.
+    // End timer and show result.
     duration = (std::clock() - stime) / (double) CLOCKS_PER_SEC;
-    std::cout << "Time needed for simulation: " << duration << "s" << endl;
+    std::cout << "Time needed for simulation: " << duration << "s" << std::endl;
 
     return 0;
 }
