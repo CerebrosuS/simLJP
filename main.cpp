@@ -38,10 +38,10 @@
 #define MASS 1
 
 // Total number of particles to simulate.
-#define TOTAL_PARTICLE 64
+#define TOTAL_PARTICLE 1e3
 
 // Total number of simulation loops.
-#define TOTAL_TIMESTEPS 1e6
+#define TOTAL_TIMESTEPS 1e3
 
 // Single timestep for integration. /s
 #define TIMESTEP 1e-6
@@ -57,21 +57,20 @@ const char * const __version__  = "1.0";
 const char * const __author__   = "Christian Krippendorf";
 const char * const __email__    = "Coding@Christian-Krippendorf.de";
 
-/** Manipulate the position and velocity matrices for border conditions.
+/** 
+ * \brief Manipulate the position and velocity matrices for border conditions.
  *
- *  mp:     Reference to the position matrix of all particles. /m
- *  mv:     Reference to the velocity matrix of all particles. /(m/s)
- *  closed: True if a limited and closed box should be simulated, else false.
- *          If it is not closed an algorithm put every particle on the opposit
- *          site on reaching the border.
- *  left:   Left border of the box. /m
- *  right:  Right border of the box. /m
- *  top:    Top border of the box. /m
- *  bottom: Bottom border of the box. /m
- *  front:  Front border of the box. /m
- *  back:   Back border of the box. /m
- *
- *  TODO:   Algorithm for a not closed system. */
+ * \param[in] mp Reference to the position matrix of all particles /m.
+ * \param[in] mv Reference to the velocity matrix of all particles /(m/s).
+ * \param[in] closed True if a limited and closed box should be simulated, 
+ *            else false. If it is not closed an algorithm put every particle 
+ *            on the opposit site on reaching the border.
+ * \param[in] left Left border of the box /m.
+ * \param[in] right Right border of the box /m.
+ * \param[in] top Top border of the box /m.
+ * \param[in] bottom Bottom border of the box /m.
+ * \param[in] front Front border of the box /m.
+ * \param[in] back Back border of the box /m. */
 void border_handling(MatrixXd &mp, MatrixXd &mv, bool closed, double left,
   double right, double top, double bottom, double front, double back) {
   if (closed) {
@@ -94,16 +93,14 @@ void border_handling(MatrixXd &mp, MatrixXd &mv, bool closed, double left,
   }
 }
 
-/** Initialize the velocities of the particles.
+/** 
+ * \brief Initialize the velocities of the particles.
  *
- *  The velocities of the particles follow the Boltzmann-Maxwell distribution.
- *  This is just another version of component-wise normal distribution, which
- *  will be implemented here.
+ * The velocities of the particles follow the Boltzmann-Maxwell distribution.
+ * This is just another version of component-wise normal distribution, which
+ * will be implemented here.
  *
- *  mv:   Reference to the velocity matrix of all particles.
- *
- *  TODO: This function is not fully implemented to the temperature of the
- *        system and needs further programming. */
+ * \param[out] mv Reference to the velocity matrix of all particles. */
 void init_velocities(MatrixXd &mv) {
   // Total number of columns (particles).
   int co = mv.cols();
@@ -121,16 +118,14 @@ void init_velocities(MatrixXd &mv) {
   }
 }
 
-/** Initialize the positions of all particles.
+/** 
+ * \brief Initialize the positions of all particles.
  *
- *  The particles will be positioned like equal distanced particles in a
- *  cube. Therefore the number of total particles should be the third power of
- *  any natural number.
+ * The particles will be positioned like equal distanced particles in a
+ * cube. Therefore the number of total particles should be the third power of
+ * any natural number.
  *
- *  mp:   Reference to the position matrix of all particles.
- *
- *  TODO: Handle different total numbers of particles and not only a third
- *        power of natural numbers. */
+ * \param[out] mp Reference to the position matrix of all particles. */
 void init_grid(MatrixXd &mp) {
   // Position variables for counting over the loops.
   int px = 0, py = 0, pz = 0;
@@ -167,12 +162,14 @@ void init_grid(MatrixXd &mp) {
   }
 }
 
-/** Calculate the Lennard-Jones potential energy force for all particles.
+/** 
+ * \brief Calculate the Lennard-Jones potential energy force for all particles.
  *
- *  vp:  Reference to the vector object of the particle to calculate the final
- *       force for.
- *  mp:  Reference to the matrix object of all surrounding particles.
- *  mpo: Reference to the matrix object where the final force will be stored. */
+ * \param[in] vp Reference to the vector object of the particle to calculate the
+ *               final force for.
+ * \param[in] mp Reference to the matrix object of all surrounding particles.
+ * \param[out] mpo Reference to the matrix object where the final force will be
+ *                 stored. */
 void calc_lenjon_force(const VectorXd &vp, const MatrixXd &mp, MatrixXd &mpo) {
   // Get distance between the main particle and all surrounding particles.
   MatrixXd rp = mp-vp.replicate(1, mp.cols());
@@ -188,10 +185,12 @@ void calc_lenjon_force(const VectorXd &vp, const MatrixXd &mp, MatrixXd &mpo) {
   mpo = rp.array().rowwise()*rpn1.cwiseProduct(rpn0).transpose().array();
 }
 
-/** Calculation of the particle accelerations based on the resulting forces.
+/** 
+ * \brief Calculation of the particle accelerations based on the resulting 
+ *        forces.
  *
- *  mp: Matrix object for the positions with 3 rows and n columns.
- *  ma: Matrix object for accelerations with 3 rows and n columns. */
+ * \param[in] mp Matrix object for the positions with 3 rows and n columns.
+ * \param[out] ma Matrix object for accelerations with 3 rows and n columns. */
 void calc_accel(const MatrixXd &mp, MatrixXd &ma) {
   // Number of columns (particles).
   int co = mp.cols();
@@ -207,20 +206,22 @@ void calc_accel(const MatrixXd &mp, MatrixXd &ma) {
   }
 }
 
-/** Test whether a path exist or not.
+/** 
+ * \brief Test whether a path exist or not.
  *
- *  Return: True if path exist, else false. */
+ * \return True if path exist, else false. */
 bool path_exist(const char* path) {
   struct stat my_stat;
   return (stat(path, &my_stat) == 0);
 }
 
-/** Initialize serialization.
+/** 
+ * \brief Initialize serialization.
  *
- *  Search for a saving path and create it if neccessary. This method should be
- *  optimized throught a configuration file.
+ * Search for a saving path and create it if neccessary. This method should be
+ * optimized throught a configuration file.
  *
- *  Return: Name of the output path. */
+ * \return Name of the output path. */
 string init_serialize() {
   // Time data object for getting the raw data.
   time_t rawtime;
@@ -244,16 +245,17 @@ string init_serialize() {
   return path;
 }
 
-/** Write the given matrices to file.
+/** 
+ * \brief Write the given matrices to file.
  *
- *  Get all references to the matrices and write them into a separate csv file
- *  in the given path.
+ * Get all references to the matrices and write them into a separate csv file
+ * in the given path.
  *
- *  mp:    Matrix object for the positions with 3 rows and n columns.
- *  ma:    Matrix object for accelerations with 3 rows and n columns.
- *  mv:    Matrix object for velocties with 3 rows and n columns.
- *  count: Number of loop; This gives information about the number of file to
- *         write in. */
+ * \param[in] mp Matrix object for the positions with 3 rows and n columns.
+ * \param[in] ma Matrix object for accelerations with 3 rows and n columns.
+ * \param[in] mv Matrix object for velocties with 3 rows and n columns.
+ * \param[in] count Number of loop; This gives information about the number of 
+ *                  file to write in. */
 void write(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, string path, int count) {
   // Open the output stream.
   ofstream out((path + string("/mds-") + to_string(count) +
@@ -266,13 +268,14 @@ void write(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, string path, int count) {
   out.close();
 }
 
-/** Simulate the system by calculation with velocity verlet algorithm.
+/** 
+ * \brief Simulate the system by calculation with velocity verlet algorithm.
  *
- *  mp:  Reference to the position matrix of all particles.
- *  mv:  Reference to the velocity matrix of all particles.
- *  ma:  Reference to the acceleration matrix of all particles.
- *  td:  Timestep for every integration loop. /s
- *  tts: Total number of loops/timesteps to integrate/simulate. */
+ * \param[in] mp Reference to the position matrix of all particles.
+ * \param[in] mv Reference to the velocity matrix of all particles.
+ * \param[in] ma Reference to the acceleration matrix of all particles.
+ * \param[in] td Timestep for every integration loop. /s
+ * \param[in] tts Total number of loops/timesteps to integrate/simulate. */
 void simulate(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, double td, double tts,
   bool serialize) {
   // If serialization is wanted. Initialize the system to do so.
@@ -307,13 +310,15 @@ void simulate(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, double td, double tts,
   }
 }
 
-/** Write short information about hte application. */
+/** 
+ * \brief Write short information about hte application. */
 void info() {
   cout << "Molecular Dynamic Simulation (Ver. " << __version__ << ")" << endl
     << "by " << __author__ << " <" << __email__ << ">" << endl;
 }
 
-/** Main entry function. */
+/** 
+ * \brief Main entry function. */
 int main(int argc, char **argv) {
     // Print application starting information
     info();
