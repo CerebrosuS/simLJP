@@ -255,8 +255,8 @@ std::string init_serialize() {
  * \param[in] mv Matrix object for velocties with 3 rows and n columns.
  * \param[in] count Number of loop; This gives information about the number of 
  *                  file to write in. */
-void write(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, std::string path,
-	   int count) {
+void write(const MatrixXd &mp, const MatrixXd &mv, const MatrixXd &ma,
+	   const std::string &path, const int &count) {
   // Open the output stream.
   std::ofstream out((path + std::string("/mds-") + std::to_string(count) +
 		     std::string(".csv")).c_str());
