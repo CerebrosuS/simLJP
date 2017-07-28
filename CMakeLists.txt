@@ -4,6 +4,8 @@ project(simljp)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
     ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+
 find_package(MKL REQUIRED)
 
 link_libraries(${MKL_LIBRARIES})

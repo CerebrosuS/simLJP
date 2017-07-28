@@ -38,13 +38,13 @@
 #define MASS 1
 
 // Total number of particles to simulate.
-#define TOTAL_PARTICLE 1e3
+#define TOTAL_PARTICLE 1000
 
 // Total number of simulation loops.
 #define TOTAL_TIMESTEPS 1e3
 
 // Single timestep for integration. /s
-#define TIMESTEP 1e-6
+#define TIMESTEP 1e-7
 
 using namespace Eigen;
 using namespace std;
@@ -53,9 +53,9 @@ using namespace std;
 const static IOFormat CSVFormat(StreamPrecision, DontAlignCols, ", ", "\n");
 
 // Constant variables and information.
-const char * const __version__  = "1.0";
-const char * const __author__   = "Christian Krippendorf";
-const char * const __email__    = "Coding@Christian-Krippendorf.de";
+const char * const __version__ = "1.0";
+const char * const __author__ = "Christian Krippendorf";
+const char * const __email__ = "Coding@Christian-Krippendorf.de";
 
 /** 
  * \brief Manipulate the position and velocity matrices for border conditions.
@@ -273,11 +273,10 @@ void write(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, string path, int count) {
  *
  * \param[in] mp Reference to the position matrix of all particles.
  * \param[in] mv Reference to the velocity matrix of all particles.
- * \param[in] ma Reference to the acceleration matrix of all particles.
- * \param[in] td Timestep for every integration loop. /s
- * \param[in] tts Total number of loops/timesteps to integrate/simulate. */
-void simulate(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, double td, double tts,
-  bool serialize) {
+ * \param[in] ma Reference to the acceleration matrix of all particles. 
+ * \param[in] serialize True if serialization wanted, else false. */
+void simulate(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, bool serialize) {
+
   // If serialization is wanted. Initialize the system to do so.
   string path;
   if (serialize)
@@ -292,13 +291,13 @@ void simulate(MatrixXd &mp, MatrixXd &mv, MatrixXd &ma, double td, double tts,
   calc_accel(mp, ma);
 
   // Main timestep loop
-  for (int ts = 0; ts < tts; ts++) {
+  for (int ts = 0; ts < TOTAL_TIMESTEPS; ts++) {
     // Implementation of the Störmer-Velocity-Verlet algorithm.
-    mp = mp + mv*td + 0.5*ma*pow(td, 2);
+    mp = mp + mv*TIMESTEP + 0.5*ma*pow(TIMESTEP, 2);
     MatrixXd mal = ma;
     calc_accel(mp, ma);
     ma += mal;
-    mv += 0.5*ma*td;
+    mv += 0.5*ma*TIMESTEP;
 
     // Correct the velocities and/or positions related to the way of handling
     // border conditions.
@@ -323,29 +322,26 @@ int main(int argc, char **argv) {
     // Print application starting information
     info();
 
-    // Define all system properties which are important to run the simulation.
-    // This part should be changed by the user in order to make adjustments to
-    // the simulation.
-
-    // Total time as integration loops
-    double tts = TOTAL_TIMESTEPS;
-
-    // Timstep for integration
-    double td = TIMESTEP;
-
-    // Number of total particles in the system.
-    unsigned int pn = TOTAL_PARTICLE;
-
     // Define matrices of position, velocity and acceleration.
-    MatrixXd mp(3, pn), mv(3, pn), ma(3, pn);
+    MatrixXd mp(3, TOTAL_PARTICLE), mv(3, TOTAL_PARTICLE),
+      ma(3, TOTAL_PARTICLE);
 
-    // Initialize the position and velocity matrices, cause they are needed for
-    // integration.
+    // Initialize the position and velocity matrices to solve initial condition
+    // problem. 
     init_grid(mp);
     init_velocities(mv);
 
+    // Start timer.
+    std::clock_t stime;
+    double duration;
+    stime = std::clock();
+    
     // Start the main simulation process.
-    simulate(mp, mv, ma, td, tts, true);
+    simulate(mp, mv, ma, true);
+
+    // End timer.
+    duration = (std::clock() - stime) / (double) CLOCKS_PER_SEC;
+    std::cout << "Time needed for simulation: " << duration << "s" << endl;
 
     return 0;
 }
