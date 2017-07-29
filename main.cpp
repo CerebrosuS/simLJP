@@ -316,10 +316,11 @@ void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
 }
 
 /** 
- * \brief Write short information about hte application. */
+ * \brief Write short information about the application. */
 void app_info() {
-  std::cout << "Molecular Dynamic Simulation (Ver. " << __version__ << ")" <<
-    std::endl << "by " << __author__ << " <" << __email__ << ">" << std::endl;
+  std::cout << "Molecular Dynamic Simulation (Ver. " << __version__ << ")"
+	    << std::endl << "by " << __author__ << " <" << __email__ << ">"
+	    << std::endl;
 }
 
 /** 
