@@ -172,7 +172,7 @@ void init_grid(Matrix3Td &mp) {
  * \param[in] mp Reference to the matrix object of all surrounding particles.
  * \param[out] mpo Reference to the matrix object where the final force will be
  *                 stored. */
-void calc_lenjon_force(const Vector3d &vp, const MatrixXd &mp, Matrix3Td &mpo) {
+void lenjon_force(const Vector3d &vp, const MatrixXd &mp, Matrix3Td &mpo) {
   // Get distance between the main particle and all surrounding particles.
   MatrixXd rp = mp-vp.replicate(1, mp.cols());
 
@@ -192,16 +192,28 @@ void calc_lenjon_force(const Vector3d &vp, const MatrixXd &mp, Matrix3Td &mpo) {
  *        forces.
  * \param[in] mp Matrix object for the positions with 3 rows and n columns.
  * \param[out] ma Matrix object for accelerations with 3 rows and n columns. */
-void calc_accel(const Matrix3Td &mp, Matrix3Td &ma) {
-  // Temporary vector/matrix objectes for calculation.
+void accel(const Matrix3Td &mp, Matrix3Td &ma) {
+  // Temporary variables for calculation.
   Matrix3Td mpo;
+  int pc;
 
   for (int pi = 0; pi < TOTAL_PARTICLE; pi++) {
-    calc_lenjon_force(mp.col(pi), mp.block(0, pi+1, 3, TOTAL_PARTICLE-(pi+1)),
-		      mpo);
-    ma.col(pi) = mpo.block(0, 0, 3, TOTAL_PARTICLE-(pi+1)).rowwise().sum()/MASS;
-    ma.block(0, pi+1, 3, TOTAL_PARTICLE-(pi+1)) -=
-      mpo.block(0, 0, 3, TOTAL_PARTICLE-(pi+1));
+    // Calculate the number of particles from pi + 1 to the end of the matrix.
+    pc = TOTAL_PARTICLE - (pi + 1);
+
+    // Calculation of the Lennard-Jones force for one particle to the following
+    // particles.
+    lenjon_force(mp.col(pi), mp.block(0, pi + 1, 3, pc), mpo);
+
+    // Devide the forces throught the mass for getting the acceleration.
+    mpo.block(0, 0, 3, pc) *= 1/MASS;
+
+    // Set the total force for the pi-th particle.
+    ma.col(pi) = mpo.block(0, 0, 3, pc).rowwise().sum();
+
+    // Cause of the third Newton's-Law every force can be used for the other
+    // particles.
+    ma.block(0, pi + 1, 3, pc) -= mpo.block(0, 0, 3, pc);
   }
 }
 
@@ -245,7 +257,7 @@ std::string init_serialize() {
 
 /** 
  * \brief Write the given matrices to file.
- *
+ * 
  * Get all references to the matrices and write them into a separate csv file
  * in the given path.
  *
@@ -290,7 +302,7 @@ void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
   double td05 = 0.5 * TIMESTEP;
 
   // First calculation of the accelerations.
-  calc_accel(mp, ma);
+  accel(mp, ma);
 
   // Start the simulation process in a loop and informate the user about it.
   std::cout << "\nSimulation running..." << std::flush;
@@ -300,7 +312,7 @@ void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
   // appropriate way of calculating in this term.
   for (int ts = 0; ts < TOTAL_TIMESTEPS; ts++) {
     mp = mp + mv*TIMESTEP + ma*td205;
-    calc_accel(mp, ma);
+    accel(mp, ma);
     mv += ma*td05;
 
     // Correct the velocities and/or positions related to the way of handling
