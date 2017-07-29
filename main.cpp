@@ -317,36 +317,35 @@ void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
 
 /** 
  * \brief Write short information about hte application. */
-void info() {
+void app_info() {
   std::cout << "Molecular Dynamic Simulation (Ver. " << __version__ << ")" <<
     std::endl << "by " << __author__ << " <" << __email__ << ">" << std::endl;
 }
 
 /** 
- * \brief Main entry function. */
+ * \brief Main entry point of the application. */
 int main(int argc, char **argv) {
-    // Print application starting information
-    info();
+    // Print application starting information.
+    app_info();
 
-    // Define matrices of position, velocity and acceleration.
+    // Matrices for position, velocity and acceleration.
     Matrix3Td mp, mv, ma;
 
-    // Initialize the position and velocity matrices to solve initial condition
-    // problem. 
+    // Initialization of the position and velocity matrices.
     init_grid(mp);
     init_velocities(mv);
 
     // Start timer.
-    std::clock_t stime;
-    double duration;
-    stime = std::clock();
+    std::clock_t stime = std::clock();
     
     // Start the main simulation process.
     simulate(mp, mv, ma, true);
 
     // End timer and show result.
-    duration = (std::clock() - stime) / (double) CLOCKS_PER_SEC;
-    std::cout << "Time needed for simulation: " << duration << "s" << std::endl;
+    std::cout << "Time needed for simulation: "
+	      << (std::clock() - stime) / (double) CLOCKS_PER_SEC
+	      << "s" << std::endl;
 
+    // Exit application.
     return 0;
 }
