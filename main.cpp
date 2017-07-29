@@ -172,7 +172,7 @@ void init_grid(Matrix3Td &mp) {
  * \param[in] mp Reference to the matrix object of all surrounding particles.
  * \param[out] mpo Reference to the matrix object where the final force will be
  *                 stored. */
-void calc_lenjon_force(const VectorXd &vp, const MatrixXd &mp, Matrix3Td &mpo) {
+void calc_lenjon_force(const Vector3d &vp, const MatrixXd &mp, Matrix3Td &mpo) {
   // Get distance between the main particle and all surrounding particles.
   MatrixXd rp = mp-vp.replicate(1, mp.cols());
 
@@ -208,9 +208,8 @@ void calc_accel(const Matrix3Td &mp, Matrix3Td &ma) {
 
 /** 
  * \brief Test whether a path exist or not.
- *
  * \return True if path exist, else false. */
-bool path_exist(const char* path) {
+bool path_exist(const char * const path) {
   struct stat my_stat;
   return (stat(path, &my_stat) == 0);
 }
