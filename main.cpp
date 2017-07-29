@@ -177,14 +177,14 @@ void lenjon_force(const Vector3d &vp, const MatrixXd &mp, Matrix3Td &mpo) {
   MatrixXd rp = mp-vp.replicate(1, mp.cols());
 
   // Calculate the distance of the particles by the norm.
-  VectorXd rpn0 = rp.colwise().norm().cwiseInverse();
-
+  ArrayXd rpn0 = rp.colwise().norm();
+  
   // Calculate the resulting forces as magnitude.
-  VectorXd rpn1 = rpn0*SIGMA;
-  rpn1 = 24*EPSILON*(2*rpn1.array().pow(7.0)-rpn1.array().pow(13.0));
+  ArrayXd rpn1 = SIGMA/rpn0;
+  rpn1 = 24*EPSILON*(2*rpn1.pow(7.0)-rpn1.pow(13.0));
 
   // Go back to the component wise view.
-  mpo.block(0, 0, 3, mp.cols()) = rp.array().rowwise()*rpn1.cwiseProduct(rpn0).transpose().array();
+  mpo.block(0, 0, 3, mp.cols()) = rp.array().rowwise()*(rpn1/rpn0).transpose();
 }
 
 /** 
@@ -196,6 +196,9 @@ void accel(const Matrix3Td &mp, Matrix3Td &ma) {
   // Temporary variables for calculation.
   Matrix3Td mpo;
   int pc;
+
+  // Empty the acceleration matrix.
+  ma.fill(0);
 
   for (int pi = 0; pi < TOTAL_PARTICLE; pi++) {
     // Calculate the number of particles from pi + 1 to the end of the matrix.
@@ -209,7 +212,7 @@ void accel(const Matrix3Td &mp, Matrix3Td &ma) {
     mpo.block(0, 0, 3, pc) *= 1/MASS;
 
     // Set the total force for the pi-th particle.
-    ma.col(pi) = mpo.block(0, 0, 3, pc).rowwise().sum();
+    ma.col(pi) += mpo.block(0, 0, 3, pc).rowwise().sum();
 
     // Cause of the third Newton's-Law every force can be used for the other
     // particles.
