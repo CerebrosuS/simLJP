@@ -166,7 +166,6 @@ void init_grid(Matrix3Td &mp) {
 
 /** 
  * \brief Calculate the Lennard-Jones potential energy force for all particles.
- *
  * \param[in] vp Reference to the vector object of the particle to calculate the
  *               final force for.
  * \param[in] mp Reference to the matrix object of all surrounding particles.
@@ -190,7 +189,6 @@ void calc_lenjon_force(const Vector3d &vp, const MatrixXd &mp, Matrix3Td &mpo) {
 /** 
  * \brief Calculation of the particle accelerations based on the resulting 
  *        forces.
- *
  * \param[in] mp Matrix object for the positions with 3 rows and n columns.
  * \param[out] ma Matrix object for accelerations with 3 rows and n columns. */
 void calc_accel(const Matrix3Td &mp, Matrix3Td &ma) {
