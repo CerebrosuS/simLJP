@@ -308,7 +308,7 @@ void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
   accel(mp, ma);
 
   // Start the simulation process in a loop and informate the user about it.
-  std::cout << "\nSimulation running..." << std::flush;
+  std::cout << "\nSimulation running...\n" << std::flush;
 
   // The whole simulation process runs inside a loop. The calculation is
   // implemented with the Velocity-Störmer algorithm which is the most
@@ -326,6 +326,9 @@ void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
     // Write current state to file if wanted.
     if (serialize)
       write(mp, mv, ma, path, ts);
+
+    // Print progress.
+    std::cout << (double) 100 * ts / TOTAL_TIMESTEPS << "%\r" << std::flush;
   }
 
   // The simulation has been finished! Informate the user about it.
