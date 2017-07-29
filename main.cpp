@@ -63,7 +63,6 @@ const char * const __email__ = "Coding@Christian-Krippendorf.de";
 
 /** 
  * \brief Manipulate the position and velocity matrices for border conditions.
- *
  * \param[in] mp Reference to the position matrix of all particles /m.
  * \param[in] mv Reference to the velocity matrix of all particles /(m/s).
  * \param[in] closed True if a limited and closed box should be simulated, 
@@ -75,7 +74,7 @@ const char * const __email__ = "Coding@Christian-Krippendorf.de";
  * \param[in] bottom Bottom border of the box /m.
  * \param[in] front Front border of the box /m.
  * \param[in] back Back border of the box /m. */
-void border_handling(Matrix3Td &mp, Matrix3Td &mv, bool closed, double left,
+void boundary(Matrix3Td &mp, Matrix3Td &mv, bool closed, double left,
   double right, double top, double bottom, double front, double back) {
   if (closed) {
     // If one of the particles reaches the end of the box, the velocity has to
@@ -270,48 +269,51 @@ void write(const Matrix3Td &mp, const Matrix3Td &mv, const Matrix3Td &ma,
 
 /** 
  * \brief Simulate the system by calculation with velocity verlet algorithm.
- *
  * \param[in] mp Reference to the position matrix of all particles.
  * \param[in] mv Reference to the velocity matrix of all particles.
  * \param[in] ma Reference to the acceleration matrix of all particles. 
  * \param[in] serialize True if serialization wanted, else false. */
 void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
-  std::cout << "\nStart simulatin process..." << std::flush;
-
   // If serialization is wanted. Initialize the system to do so.
   std::string path;
   if (serialize)
     path = init_serialize();
 
   // Calculate box borders from number of particles.
-  double po = cbrt(mp.cols());
+  double po = cbrt(TOTAL_PARTICLE);
   if (fmod(po, 1) != 0)
-    std::cout << "Error: Wrong size of particles." << std::endl;
-
-  // Calculate accelerations
-  calc_accel(mp, ma);
+    std::cout << std::endl << "Error: Wrong size of particles." << std::endl;
 
   // Temporary calculations that will be done here once instead of multiple
   // times inside the loop.
   double td205 = 0.5 * std::pow(TIMESTEP, 2);
   double td05 = 0.5 * TIMESTEP;
 
-  // Main timestep loop
+  // First calculation of the accelerations.
+  calc_accel(mp, ma);
+
+  // Start the simulation process in a loop and informate the user about it.
+  std::cout << "\nSimulation running..." << std::flush;
+
+  // The whole simulation process runs inside a loop. The calculation is
+  // implemented with the Velocity-Störmer algorithm which is the most
+  // appropriate way of calculating in this term.
   for (int ts = 0; ts < TOTAL_TIMESTEPS; ts++) {
-    // Implementation of the Störmer-Velocity-Verlet algorithm.
     mp = mp + mv*TIMESTEP + ma*td205;
     calc_accel(mp, ma);
     mv += ma*td05;
 
     // Correct the velocities and/or positions related to the way of handling
-    // border conditions.
-    border_handling(mp, mv, true, 0, po, 0, po, 0, po);
+    // boundary conditions. They can be handled with periodic boundary or a closed
+    // volume like a box.
+    boundary(mp, mv, true, 0, po, 0, po, 0, po);
 
-    // Write current state to file.
+    // Write current state to file if wanted.
     if (serialize)
       write(mp, mv, ma, path, ts);
   }
 
+  // The simulation has been finished! Informate the user about it.
   std::cout << "finish!" << std::endl << std::flush;
 }
 
