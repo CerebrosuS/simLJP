@@ -33,7 +33,7 @@
 #define EIGEN_USE_MKL_ALL
 
 // Cofficients for the Lennard-Jones potential.
-#define SIGMA 1.0e-1
+#define SIGMA 1.0
 #define EPSILON 1.0
 
 // The mass of an atom. /kg
@@ -45,8 +45,17 @@
 // Total number of simulation loops.
 #define TOTAL_TIMESTEPS 1000
 
-// Single timestep for integration. /s
-#define TIMESTEP 1e-7
+// Single timestep for integration /s.
+#define TIMESTEP 1e-4
+
+// Starting temperature of the system /K.
+#define TEMP 200
+
+// Boltzmann constant /(J/K).
+#define KB 1.38064852e-23
+
+// PI
+#define PI 3.14159265359
 
 using namespace Eigen;
 
@@ -105,16 +114,16 @@ void boundary(Matrix3Td &mp, Matrix3Td &mv, bool closed, double left,
  *
  * \param[out] mv Reference to the velocity matrix of all particles. */
 void init_velocities(Matrix3Td &mv) {
-  // Total number of columns (particles).
-  int co = mv.cols();
+  // Calculation of the mid velocity for the particle.
+  double v = std::pow(8*KB*TEMP/PI/MASS, 1/2);
 
   // Create the normal distribution object for generating random velocity
   // numbers.
   std::default_random_engine generator;
-  std::normal_distribution<double> dist(0.0, 2.0);
+  std::normal_distribution<double> dist(v, v);
 
   // Calculate velocity components for every particle.
-  for (int pi = 0; pi < co; pi++) {
+  for (int pi = 0; pi < TOTAL_PARTICLE; pi++) {
     mv(0, pi) = dist(generator);
     mv(1, pi) = dist(generator);
     mv(2, pi) = dist(generator);
@@ -181,7 +190,7 @@ void lenjon_force(const Vector3d &vp, const MatrixXd &mp, Matrix3Td &mpo) {
   
   // Calculate the resulting forces as magnitude.
   ArrayXd rpn1 = SIGMA/rpn0;
-  rpn1 = 24*EPSILON*(2*rpn1.pow(7.0)-rpn1.pow(13.0));
+  rpn1 = -24*EPSILON*(2*rpn1.pow(7.0)-rpn1.pow(13.0));
 
   // Go back to the component wise view.
   mpo.block(0, 0, 3, mp.cols()) = rp.array().rowwise()*(rpn1/rpn0).transpose();
@@ -328,11 +337,11 @@ void simulate(Matrix3Td &mp, Matrix3Td &mv, Matrix3Td &ma, bool serialize) {
       write(mp, mv, ma, path, ts);
 
     // Print progress.
-    std::cout << (double) 100 * ts / TOTAL_TIMESTEPS << "%\r" << std::flush;
+    std::cout << (int) 100.0 * ts / TOTAL_TIMESTEPS << "%\r" << std::flush;
   }
 
   // The simulation has been finished! Informate the user about it.
-  std::cout << "finish!" << std::endl << std::flush;
+  std::cout << "finish!\n\n" << std::flush;
 }
 
 /** 
